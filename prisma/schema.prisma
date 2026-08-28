@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
+enum ShootStatus {
+  CONFIRMED
+  TENTATIVE
+  CANCELLED
+}
+
+enum AssignmentStatus {
+  CONFIRMED
+  TENTATIVE
+  DECLINED
+}
+
+model User {
+  id           String       @id @default(cuid())
+  name         String
+  email        String       @unique
+  passwordHash String
+  role         Role         @default(STAFF)
+  phone        String?
+  createdAt    DateTime     @default(now())
+  assignments  Assignment[]
+
+  @@index([role])
+}
+
+model ProductionRole {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+}
+
+model Shoot {
+  id          String       @id @default(cuid())
+  title       String
+  client      String
+  date        DateTime
+  callTime    String
+  wrapTime    String
+  location    String
+  notes       String?
+  status      ShootStatus  @default(CONFIRMED)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  assignments Assignment[]
+
+  @@index([date])
+  @@index([status])
+}
+
+model Assignment {
+  id        String           @id @default(cuid())
+  shootId   String
+  userId    String
+  role      String
+  status    AssignmentStatus @default(TENTATIVE)
+  createdAt DateTime         @default(now())
+  shoot     Shoot            @relation(fields: [shootId], references: [id], onDelete: Cascade)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([shootId, userId])
+  @@index([userId])
+  @@index([role])
+}
