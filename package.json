@@ -44,6 +44,13 @@
     "seed": "node prisma/seed.js"
   },
   "postinstall": "prisma generate",
+  "browserslist": [
+    "> 0.5%",
+    "last 2 versions",
+    "safari >= 15",
+    "ios_saf >= 15",
+    "not dead"
+  ],
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
