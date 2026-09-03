@@ -1,20 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 import { cn } from "@/lib/utils";
+
+function subscribe() {
+  return () => {};
+}
 
 /**
  * Temporary diagnostic: green dot = client JS hydrated and running,
  * gray dot = page rendered but JS never executed (taps will do nothing).
  */
 export function HydrationProbe() {
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    setHydrated(true);
-    console.log("[deepsync] client hydrated");
-  }, []);
+  const hydrated = useSyncExternalStore(subscribe, () => true, () => false);
 
   return (
     <span
