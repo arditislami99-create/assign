@@ -127,4 +127,13 @@
   html {
     @apply font-sans;
   }
+  /* Kill double-tap-zoom delays so taps register immediately on touch screens */
+  button,
+  a,
+  [role="button"],
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
+  }
 }

@@ -47,14 +47,29 @@ export function MonthCalendar({
             const isBooked = bookedDays.has(key);
             const maxVisible = 3;
 
+            const clickable = !!onSelectDay;
+
             return (
-              <button
+              <div
                 key={key}
-                onClick={onSelectDay ? () => onSelectDay(day) : undefined}
+                role={clickable ? "button" : undefined}
+                tabIndex={clickable ? 0 : undefined}
+                aria-label={clickable ? `View ${day.toLocaleDateString()}` : undefined}
+                onClick={clickable ? () => onSelectDay(day) : undefined}
+                onKeyDown={
+                  clickable
+                    ? (e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          onSelectDay(day);
+                        }
+                      }
+                    : undefined
+                }
                 className={cn(
                   "group relative flex min-h-[72px] flex-col gap-1 border-r border-b p-1 text-left align-top last:border-r-0 sm:min-h-[96px] sm:p-1.5",
                   wi === weeks.length - 1 && "border-b-0",
-                  onSelectDay && "cursor-pointer hover:bg-muted/50",
+                  clickable && "cursor-pointer hover:bg-muted/50 focus-visible:outline-2 focus-visible:outline-ring",
                   !inMonth && "bg-muted/30"
                 )}
               >
@@ -77,11 +92,7 @@ export function MonthCalendar({
                 </div>
                 <div className="flex flex-col gap-1">
                   {shoots.slice(0, maxVisible).map((shoot) => (
-                    <div
-                      key={shoot.id}
-                      onClick={(e) => e.stopPropagation()}
-                      onMouseDown={(e) => e.stopPropagation()}
-                    >
+                    <div key={shoot.id} onClick={(e) => e.stopPropagation()}>
                       <ShootChip shoot={shoot} compact={shoots.length > 2} />
                     </div>
                   ))}
@@ -91,7 +102,7 @@ export function MonthCalendar({
                     </span>
                   )}
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>

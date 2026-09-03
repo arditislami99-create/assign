@@ -89,10 +89,10 @@ export function ScheduleView({
         </div>
         <Tabs value={view} onValueChange={(v) => setView(v as "list" | "calendar")}>
           <TabsList>
-            <TabsTrigger value="list">
+            <TabsTrigger value="list" onClick={() => setView("list")}>
               <LayoutList className="size-4" /> List
             </TabsTrigger>
-            <TabsTrigger value="calendar">
+            <TabsTrigger value="calendar" onClick={() => setView("calendar")}>
               <CalendarRange className="size-4" /> Calendar
             </TabsTrigger>
           </TabsList>

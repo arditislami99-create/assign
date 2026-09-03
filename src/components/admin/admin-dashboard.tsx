@@ -181,10 +181,10 @@ export function AdminDashboard({
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <Tabs value={view} onValueChange={(v) => setView(v as "calendar" | "list")}>
           <TabsList>
-            <TabsTrigger value="calendar">
+            <TabsTrigger value="calendar" onClick={() => setView("calendar")}>
               <LayoutList className="size-4" /> Calendar
             </TabsTrigger>
-            <TabsTrigger value="list">
+            <TabsTrigger value="list" onClick={() => setView("list")}>
               <ListFilter className="size-4" /> List
             </TabsTrigger>
           </TabsList>
@@ -266,8 +266,8 @@ export function AdminDashboard({
               </h2>
               <Tabs value={calView} onValueChange={(v) => setCalView(v as "month" | "week")}>
                 <TabsList>
-                  <TabsTrigger value="month">Month</TabsTrigger>
-                  <TabsTrigger value="week">Week</TabsTrigger>
+                  <TabsTrigger value="month" onClick={() => setCalView("month")}>Month</TabsTrigger>
+                  <TabsTrigger value="week" onClick={() => setCalView("week")}>Week</TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
