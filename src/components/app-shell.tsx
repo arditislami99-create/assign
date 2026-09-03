@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import { Brand } from "@/components/brand";
-import { HydrationProbe } from "@/components/hydration-probe";
 import { MobileNav } from "@/components/mobile-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
@@ -55,7 +54,6 @@ export async function AppShell({ children }: Readonly<{ children: React.ReactNod
             <MobileNav isAdmin={isAdmin} />
             <ThemeToggle />
             <UserMenu user={user} isAdmin={isAdmin} />
-            <HydrationProbe />
           </div>
         </div>
       </header>
