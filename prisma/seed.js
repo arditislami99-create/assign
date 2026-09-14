@@ -86,6 +86,7 @@ async function main() {
       wrapTime: "15:30",
       location: "Stage B, Hollywood",
       notes: "2 setups, indoor product. Breakfast catered at 6am.",
+      price: 4500,
       status: ShootStatus.CONFIRMED,
       assignments: [
         ["Director", "Alex Rivera", AssignmentStatus.CONFIRMED],
@@ -104,6 +105,7 @@ async function main() {
       wrapTime: "17:00",
       location: "Downtown LA streets",
       notes: "Run-and-gun, city hall exteriors. Street parking pass provided.",
+      price: 3200,
       status: ShootStatus.CONFIRMED,
       assignments: [
         ["Director", "Alex Rivera", AssignmentStatus.CONFIRMED],
@@ -121,6 +123,7 @@ async function main() {
       wrapTime: "14:00",
       location: "Sunset Blvd rooftop",
       notes: "Overlaps Northline Day 1 — resolve Alex & Jordan before confirming.",
+      price: 1800,
       status: ShootStatus.TENTATIVE,
       assignments: [
         ["Director", "Alex Rivera", AssignmentStatus.TENTATIVE],
@@ -136,6 +139,7 @@ async function main() {
       wrapTime: "16:00",
       location: "Culver City studio",
       notes: "Macro lens work, ring light setup. Client approving on set.",
+      price: 2800,
       status: ShootStatus.TENTATIVE,
       assignments: [
         ["Director", "Alex Rivera", AssignmentStatus.TENTATIVE],
@@ -152,6 +156,7 @@ async function main() {
       wrapTime: "14:00",
       location: "Ridgeline Coffee Roasters",
       notes: "Steadicam day. Roastery environment, low light interiors.",
+      price: 2200,
       status: ShootStatus.CONFIRMED,
       assignments: [
         ["Director", "Alex Rivera", AssignmentStatus.CONFIRMED],
@@ -169,6 +174,7 @@ async function main() {
       wrapTime: "19:00",
       location: "LA Convention Center",
       notes: "Live event coverage, 3 cameras. Media wall backline.",
+      price: 5600,
       status: ShootStatus.TENTATIVE,
       assignments: [
         ["Producer", "Maya Chen", AssignmentStatus.CONFIRMED],
@@ -185,6 +191,7 @@ async function main() {
       wrapTime: "18:00",
       location: "Harbor & Vine, Venice",
       notes: "Food styling day, golden hour exteriors. Chef interviews.",
+      price: 3900,
       status: ShootStatus.CONFIRMED,
       assignments: [
         ["Director", "Alex Rivera", AssignmentStatus.CONFIRMED],
@@ -210,6 +217,7 @@ async function main() {
         wrapTime: s.wrapTime,
         location: s.location,
         notes: s.notes,
+        price: s.price,
         status: s.status,
       },
     });

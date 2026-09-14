@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, CalendarDays, Clock, MapPin, Pencil, Trash2, Users } from "lucide-react";
+import { AlertTriangle, CalendarDays, CircleDollarSign, Clock, MapPin, Pencil, Trash2, Users } from "lucide-react";
 
 import { deleteShoot } from "@/app/actions/shoots";
 import {
@@ -14,7 +14,7 @@ import { ShootForm } from "@/components/admin/shoot-form";
 import { updateShoot } from "@/app/actions/shoots";
 import { AssignCrewDialog } from "@/components/admin/assign-crew-dialog";
 import { shootStatusInfo } from "@/lib/constants";
-import { formatTime, timesOverlap } from "@/lib/utils";
+import { formatTime, formatPrice, timesOverlap } from "@/lib/utils";
 import type { ClientShoot, ClientStaff } from "@/lib/types";
 import { AssignmentStatus } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
@@ -138,6 +138,12 @@ export function ShootDetail({
               <Users className="size-4" />
               {shoot.assignments.length} crew
             </span>
+            {shoot.price != null && (
+              <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
+                <CircleDollarSign className="size-4" />
+                {formatPrice(shoot.price)}
+              </span>
+            )}
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">

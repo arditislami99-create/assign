@@ -24,6 +24,7 @@ export type ClientShoot = {
   wrapTime: string;
   location: string;
   notes: string | null;
+  price: number | null;
   status: ShootStatus;
   assignments: ClientAssignment[];
 };

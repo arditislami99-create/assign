@@ -16,6 +16,7 @@ export function toClientShoot(shoot: AdminData["shoots"][number]): ClientShoot {
     wrapTime: shoot.wrapTime,
     location: shoot.location,
     notes: shoot.notes,
+    price: shoot.price,
     status: shoot.status,
     assignments: shoot.assignments.map((a) => ({
       id: a.id,

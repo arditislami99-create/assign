@@ -17,6 +17,10 @@ const shootSchema = z.object({
   wrapTime: z.string().regex(/^\d{2}:\d{2}$/, "Invalid wrap time."),
   location: z.string().trim().min(1, "Location is required."),
   notes: z.string().trim().optional(),
+  price: z.preprocess(
+    (v) => (v === "" || v == null ? undefined : Number(v)),
+    z.number({ error: "Price must be a number." }).min(0, "Price can't be negative.").optional()
+  ),
   status: z.enum(["CONFIRMED", "TENTATIVE", "CANCELLED"]),
 });
 
@@ -35,7 +39,7 @@ export async function createShoot(
   const dateOnly = new Date(`${date}T00:00:00`);
 
   const shoot = await db.shoot.create({
-    data: { ...rest, date: dateOnly },
+    data: { ...rest, price: rest.price ?? null, date: dateOnly },
   });
 
   revalidatePath("/dashboard");
@@ -59,7 +63,7 @@ export async function updateShoot(
 
   await db.shoot.update({
     where: { id },
-    data: { ...rest, date: dateOnly },
+    data: { ...rest, price: rest.price ?? null, date: dateOnly },
   });
 
   revalidatePath("/dashboard");

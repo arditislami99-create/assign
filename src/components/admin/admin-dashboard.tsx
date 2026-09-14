@@ -6,7 +6,7 @@ import Link from "next/link";
 
 import type { ClientShoot, ClientStaff } from "@/lib/types";
 import { SHOOT_STATUSES } from "@/lib/constants";
-import { formatTime, cn, timesOverlap, toDateKey } from "@/lib/utils";
+import { formatTime, cn, timesOverlap, toDateKey, formatPrice } from "@/lib/utils";
 import { addMonths, dayKey, monthLabel, addDays } from "@/lib/calendar";
 import { MonthCalendar } from "@/components/admin/month-calendar";
 import { WeekView } from "@/components/admin/week-view";
@@ -451,7 +451,12 @@ function ShootCard({
           <h3 className={cn("mt-1.5 truncate font-semibold leading-6", cancelled && "line-through decoration-muted-foreground")}>
             {shoot.title}
           </h3>
-          <p className="text-xs text-muted-foreground">{shoot.client}</p>
+          <p className="text-xs text-muted-foreground">
+            {shoot.client}
+            {shoot.price != null && (
+              <span className="font-medium text-foreground"> · {formatPrice(shoot.price)}</span>
+            )}
+          </p>
         </div>
         <div className="shrink-0 text-right">
           <span className={cn(badgeClasses, "invisible")} aria-hidden="true">

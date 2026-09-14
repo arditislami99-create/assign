@@ -107,6 +107,19 @@ export function ShootForm({
           <Input id="location" name="location" placeholder="Stage B, Hollywood" defaultValue={shoot?.location} required />
         </div>
         <div className="space-y-2 sm:col-span-2">
+          <Label htmlFor="price">Charge / price (USD, optional)</Label>
+          <Input
+            id="price"
+            name="price"
+            type="number"
+            min="0"
+            step="0.01"
+            inputMode="decimal"
+            placeholder="e.g. 2500"
+            defaultValue={shoot?.price ?? ""}
+          />
+        </div>
+        <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="notes">Notes / call sheet link</Label>
           <Textarea
             id="notes"

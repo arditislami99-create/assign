@@ -52,6 +52,7 @@ model Shoot {
   wrapTime    String
   location    String
   notes       String?
+  price       Float?
   status      ShootStatus  @default(CONFIRMED)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt

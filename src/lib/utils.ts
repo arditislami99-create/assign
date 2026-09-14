@@ -24,8 +24,16 @@ export function formatTime(hhmm: string): string {
   return `${String(h).padStart(2, "0")}:${String(m || 0).padStart(2, "0")}`
 }
 
-export function initials(name: string): string {
-  return name
+export function formatPrice(value: number | null | undefined): string {
+  if (value == null) return "—";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: value % 1 === 0 ? 0 : 2,
+  }).format(value);
+}
+
+export function initials(name: string): string {  return name
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
