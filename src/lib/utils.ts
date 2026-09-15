@@ -26,9 +26,9 @@ export function formatTime(hhmm: string): string {
 
 export function formatPrice(value: number | null | undefined): string {
   if (value == null) return "—";
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("en-IE", {
     style: "currency",
-    currency: "USD",
+    currency: "EUR",
     maximumFractionDigits: value % 1 === 0 ? 0 : 2,
   }).format(value);
 }

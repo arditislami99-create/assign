@@ -107,7 +107,7 @@ export function ShootForm({
           <Input id="location" name="location" placeholder="Stage B, Hollywood" defaultValue={shoot?.location} required />
         </div>
         <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="price">Charge / price (USD, optional)</Label>
+          <Label htmlFor="price">Charge / price (€, optional)</Label>
           <Input
             id="price"
             name="price"
