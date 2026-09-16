@@ -43,6 +43,7 @@ export async function createShoot(
   });
 
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/finance");
   redirect(`/dashboard/shoots/${shoot.id}`);
 }
 
@@ -67,6 +68,7 @@ export async function updateShoot(
   });
 
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/finance");
   revalidatePath(`/dashboard/shoots/${id}`);
   redirect(`/dashboard/shoots/${id}`);
 }
@@ -75,5 +77,6 @@ export async function deleteShoot(id: string) {
   await requireAdmin();
   await db.shoot.delete({ where: { id } });
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/finance");
   redirect("/dashboard");
 }

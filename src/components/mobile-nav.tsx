@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarPlus, LayoutDashboard, Menu, Users } from "lucide-react";
+import { CalendarPlus, CircleDollarSign, LayoutDashboard, Menu, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +21,7 @@ export function MobileNav({ isAdmin }: { isAdmin: boolean }) {
     ? [
         { href: "/dashboard", label: "Schedule", icon: LayoutDashboard },
         { href: "/dashboard/team", label: "Team & roles", icon: Users },
+        { href: "/dashboard/finance", label: "Finances", icon: CircleDollarSign },
         { href: "/dashboard/shoots/new", label: "New shoot", icon: CalendarPlus },
       ]
     : [{ href: "/schedule", label: "My schedule", icon: LayoutDashboard }];

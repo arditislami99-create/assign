@@ -34,6 +34,12 @@ export async function AppShell({ children }: Readonly<{ children: React.ReactNod
                     Team
                   </Link>
                   <Link
+                    href="/dashboard/finance"
+                    className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  >
+                    Finances
+                  </Link>
+                  <Link
                     href="/dashboard/shoots/new"
                     className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   >
