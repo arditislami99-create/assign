@@ -1,4 +1,4 @@
-import type { AssignmentStatus, ShootStatus } from "@prisma/client";
+import type { AssignmentStatus, ExpenseCategory, ShootStatus } from "@prisma/client";
 
 export const CREW_ROLES = [
   "Producer",
@@ -43,4 +43,18 @@ export function shootStatusInfo(status: ShootStatus) {
 
 export function assignmentStatusInfo(status: AssignmentStatus) {
   return ASSIGNMENT_STATUSES.find((s) => s.value === status) ?? ASSIGNMENT_STATUSES[0];
+}
+
+export const EXPENSE_CATEGORIES: { value: ExpenseCategory; label: string }[] = [
+  { value: "CREW", label: "Crew" },
+  { value: "EQUIPMENT", label: "Equipment" },
+  { value: "TRAVEL", label: "Travel" },
+  { value: "LOCATION", label: "Location" },
+  { value: "CATERING", label: "Catering" },
+  { value: "POST", label: "Post-production" },
+  { value: "OTHER", label: "Other" },
+];
+
+export function expenseCategoryLabel(category: ExpenseCategory) {
+  return EXPENSE_CATEGORIES.find((c) => c.value === category)?.label ?? category;
 }

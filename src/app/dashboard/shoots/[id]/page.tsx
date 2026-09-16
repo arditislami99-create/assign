@@ -20,6 +20,7 @@ export default async function ShootDetailPage({ params }: { params: Promise<{ id
         include: { user: { select: assignmentUserSelect } },
         orderBy: [{ role: "asc" }, { createdAt: "asc" }],
       },
+      expenses: { orderBy: { date: "desc" } },
     },
   });
   if (!shoot) notFound();
@@ -44,6 +45,7 @@ export default async function ShootDetailPage({ params }: { params: Promise<{ id
         assignments: {
           include: { user: { select: assignmentUserSelect } },
         },
+        expenses: { orderBy: { date: "desc" } },
       },
     }),
   ]);

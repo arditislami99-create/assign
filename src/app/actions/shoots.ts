@@ -21,6 +21,10 @@ const shootSchema = z.object({
     (v) => (v === "" || v == null ? undefined : Number(v)),
     z.number({ error: "Price must be a number." }).min(0, "Price can't be negative.").optional()
   ),
+  amountPaid: z.preprocess(
+    (v) => (v === "" || v == null ? 0 : Number(v)),
+    z.number({ error: "Amount paid must be a number." }).min(0, "Amount paid can't be negative.")
+  ),
   status: z.enum(["CONFIRMED", "TENTATIVE", "CANCELLED"]),
 });
 
@@ -79,4 +83,13 @@ export async function deleteShoot(id: string) {
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/finance");
   redirect("/dashboard");
+}
+
+export async function markShootPaid(id: string) {
+  await requireAdmin();
+  const shoot = await db.shoot.findUnique({ where: { id }, select: { price: true } });
+  if (!shoot?.price) return;
+  await db.shoot.update({ where: { id }, data: { amountPaid: shoot.price } });
+  revalidatePath("/dashboard/finance");
+  revalidatePath(`/dashboard/shoots/${id}`);
 }

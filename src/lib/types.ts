@@ -1,4 +1,4 @@
-import type { AssignmentStatus, Role, ShootStatus } from "@prisma/client";
+import type { AssignmentStatus, ExpenseCategory, Role, ShootStatus } from "@prisma/client";
 
 export type ClientUser = {
   id: string;
@@ -25,8 +25,21 @@ export type ClientShoot = {
   location: string;
   notes: string | null;
   price: number | null;
+  amountPaid: number;
   status: ShootStatus;
   assignments: ClientAssignment[];
+  expenses: ClientExpense[];
+};
+
+export type ClientExpense = {
+  id: string;
+  title: string;
+  amount: number;
+  category: ExpenseCategory;
+  date: string;
+  notes: string | null;
+  shootId: string | null;
+  shootTitle?: string;
 };
 
 export type ClientStaff = {

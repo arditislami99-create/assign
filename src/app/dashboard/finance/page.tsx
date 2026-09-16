@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
 
 import { getAdminData } from "@/lib/data";
-import { toClientShoot } from "@/lib/mappers";
+import { toClientShoot, toClientExpense } from "@/lib/mappers";
 import { formatPrice } from "@/lib/utils";
+import { expenseCategoryLabel } from "@/lib/constants";
 import { summarizeFinance } from "@/lib/finance";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ExpensesManager } from "@/components/admin/expenses-manager";
 import { ShootsFinanceTable } from "./shoots-table";
 
 export const metadata: Metadata = { title: "Finances" };
 
 export default async function FinancePage() {
-  const { shoots } = await getAdminData();
+  const { shoots, expenses } = await getAdminData();
   const all = shoots.map(toClientShoot);
-  const summary = summarizeFinance(all);
+  const allExpenses = expenses.map(toClientExpense);
+  const summary = summarizeFinance(all, allExpenses);
 
   const moM =
     summary.prevMonthRevenue > 0
@@ -29,6 +32,30 @@ export default async function FinancePage() {
       value: formatPrice(summary.revenue),
       sub: `${summary.totalConfirmed} shoot${summary.totalConfirmed === 1 ? "" : "s"}`,
     },
+    {
+      title: "Expenses",
+      value: formatPrice(summary.totalExpenses),
+      sub: `${summary.expenseCount} item${summary.expenseCount === 1 ? "" : "s"}`,
+    },
+    {
+      title: "Profit",
+      value: formatPrice(summary.profit),
+      sub:
+        summary.revenue > 0
+          ? `${Math.round((summary.profit / summary.revenue) * 100)}% margin`
+          : "no revenue yet",
+    },
+    {
+      title: "Outstanding",
+      value: formatPrice(summary.outstanding),
+      sub:
+        summary.unpaidCount === 0
+          ? "all collected"
+          : `${summary.unpaidCount} unpaid shoot${summary.unpaidCount === 1 ? "" : "s"}`,
+    },
+  ];
+
+  const activityCards = [
     {
       title: "This month",
       value: formatPrice(summary.thisMonthRevenue),
@@ -70,6 +97,22 @@ export default async function FinancePage() {
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-semibold tabular-nums">{c.value}</p>
+              <p className="text-xs text-muted-foreground">{c.sub}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        {activityCards.map((c) => (
+          <Card key={c.title}>
+            <CardHeader className="pb-1">
+              <CardTitle className="text-xs font-medium text-muted-foreground">
+                {c.title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xl font-semibold tabular-nums">{c.value}</p>
               <p className="text-xs text-muted-foreground">{c.sub}</p>
             </CardContent>
           </Card>
@@ -167,6 +210,66 @@ export default async function FinancePage() {
         </Card>
       </div>
 
+      <div className="grid gap-3 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Expenses by category</CardTitle>
+            <CardDescription>
+              Shoot-linked and general expenses combined.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="px-0 pb-0">
+            {summary.byCategory.length === 0 ? (
+              <p className="px-4 pb-4 text-sm text-muted-foreground">No expenses yet.</p>
+            ) : (
+              <div className="space-y-3 px-4 pb-4">
+                {summary.byCategory.slice(0, 8).map((c) => {
+                  const top = summary.byCategory[0].total;
+                  return (
+                    <div key={c.category} className="space-y-1">
+                      <div className="flex items-baseline justify-between gap-2 text-sm">
+                        <span className="min-w-0 truncate font-medium">
+                          {expenseCategoryLabel(c.category)}
+                        </span>
+                        <span className="shrink-0 tabular-nums text-muted-foreground">
+                          {formatPrice(c.total)}
+                          <span className="ml-2 text-xs">
+                            {c.count} item{c.count === 1 ? "" : "s"}
+                          </span>
+                        </span>
+                      </div>
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full bg-rose-500/70"
+                          style={{ width: `${top > 0 ? (c.total / top) * 100 : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Expenses</CardTitle>
+            <CardDescription>
+              Add shoot costs or general overhead. Deleting a shoot removes its expenses.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ExpensesManager
+              expenses={allExpenses}
+              shoots={all
+                .filter((s) => s.status !== "CANCELLED")
+                .map((s) => ({ id: s.id, title: s.title }))}
+            />
+          </CardContent>
+        </Card>
+      </div>
+
       <Card className="overflow-hidden py-0">
         <ShootsFinanceTable
           shoots={all.map((s) => ({
@@ -175,6 +278,7 @@ export default async function FinancePage() {
             client: s.client,
             date: s.date,
             price: s.price,
+            amountPaid: s.amountPaid,
             status: s.status,
           }))}
         />

@@ -106,7 +106,7 @@ export function ShootForm({
           <Label htmlFor="location">Location</Label>
           <Input id="location" name="location" placeholder="Stage B, Hollywood" defaultValue={shoot?.location} required />
         </div>
-        <div className="space-y-2 sm:col-span-2">
+        <div className="space-y-2">
           <Label htmlFor="price">Charge / price (€, optional)</Label>
           <Input
             id="price"
@@ -117,6 +117,19 @@ export function ShootForm({
             inputMode="decimal"
             placeholder="e.g. 2500"
             defaultValue={shoot?.price ?? ""}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="amountPaid">Amount paid (€)</Label>
+          <Input
+            id="amountPaid"
+            name="amountPaid"
+            type="number"
+            min="0"
+            step="0.01"
+            inputMode="decimal"
+            placeholder="0.00"
+            defaultValue={shoot?.amountPaid ?? ""}
           />
         </div>
         <div className="space-y-2 sm:col-span-2">

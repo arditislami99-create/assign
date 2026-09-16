@@ -6,6 +6,7 @@ import { ArrowUpRight, Inbox } from "lucide-react";
 
 import { shootStatusInfo } from "@/lib/constants";
 import type { FinanceShoot } from "@/lib/finance";
+import { outstandingOf } from "@/lib/finance";
 import { formatDateLabel, formatPrice } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -38,6 +39,10 @@ export function ShootsFinanceTable({ shoots }: { shoots: FinanceRow[] }) {
 
   const priced = filtered.filter((s) => s.price != null);
   const subtotal = priced.reduce((sum, s) => sum + (s.price ?? 0), 0);
+  const paidTotal = priced.reduce((sum, s) => sum + Math.min(s.amountPaid, s.price ?? 0), 0);
+  const outstandingTotal = filtered
+    .filter((s) => s.status !== "CANCELLED")
+    .reduce((sum, s) => sum + outstandingOf(s), 0);
   const unpriced = filtered.length - priced.length;
 
   const counts = useMemo(() => {
@@ -73,13 +78,15 @@ export function ShootsFinanceTable({ shoots }: { shoots: FinanceRow[] }) {
             <TableHead className="pl-4">Shoot</TableHead>
             <TableHead>Date</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="text-right pr-4">Charge</TableHead>
+            <TableHead className="text-right">Charge</TableHead>
+            <TableHead className="text-right">Paid</TableHead>
+            <TableHead className="text-right pr-4">Balance</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {filtered.length === 0 && (
             <TableRow>
-              <TableCell colSpan={4}>
+              <TableCell colSpan={6}>
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <Inbox className="mb-3 size-8 text-muted-foreground/50" />
                   <p className="text-sm font-medium">No shoots in this view</p>
@@ -93,6 +100,7 @@ export function ShootsFinanceTable({ shoots }: { shoots: FinanceRow[] }) {
           {filtered.map((s) => {
             const info = shootStatusInfo(s.status);
             const cancelled = s.status === "CANCELLED";
+            const balance = cancelled ? 0 : outstandingOf(s);
             return (
               <TableRow key={s.id}>
                 <TableCell className="pl-4">
@@ -113,8 +121,20 @@ export function ShootsFinanceTable({ shoots }: { shoots: FinanceRow[] }) {
                 <TableCell>
                   <Badge className={info.classes}>{info.label}</Badge>
                 </TableCell>
-                <TableCell className="text-right tabular-nums pr-4">
+                <TableCell className="text-right tabular-nums">
                   {formatPrice(s.price)}
+                </TableCell>
+                <TableCell className="text-right tabular-nums text-muted-foreground">
+                  {s.price != null ? formatPrice(s.amountPaid) : "—"}
+                </TableCell>
+                <TableCell
+                  className={
+                    balance > 0
+                      ? "text-right tabular-nums pr-4 font-medium text-amber-600 dark:text-amber-400"
+                      : "text-right tabular-nums pr-4 text-muted-foreground"
+                  }
+                >
+                  {s.price != null ? formatPrice(balance) : "—"}
                 </TableCell>
               </TableRow>
             );
@@ -126,8 +146,14 @@ export function ShootsFinanceTable({ shoots }: { shoots: FinanceRow[] }) {
               {priced.length} priced shoot{priced.length === 1 ? "" : "s"}
               {unpriced > 0 && ` · ${unpriced} without a price (excluded)`}
             </TableCell>
-            <TableCell className="text-right font-semibold tabular-nums pr-4">
+            <TableCell className="text-right font-semibold tabular-nums">
               {formatPrice(subtotal)}
+            </TableCell>
+            <TableCell className="text-right tabular-nums text-muted-foreground">
+              {formatPrice(paidTotal)}
+            </TableCell>
+            <TableCell className="text-right font-semibold tabular-nums pr-4">
+              {formatPrice(outstandingTotal)}
             </TableCell>
           </TableRow>
         </TableFooter>

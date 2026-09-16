@@ -1,5 +1,5 @@
 import type { AdminData } from "@/lib/data";
-import type { ClientShoot, ClientStaff } from "@/lib/types";
+import type { ClientExpense, ClientShoot, ClientStaff } from "@/lib/types";
 
 function mapDate(d: Date | string): string {
   if (d instanceof Date) return d.toISOString();
@@ -17,7 +17,9 @@ export function toClientShoot(shoot: AdminData["shoots"][number]): ClientShoot {
     location: shoot.location,
     notes: shoot.notes,
     price: shoot.price,
+    amountPaid: shoot.amountPaid,
     status: shoot.status,
+    expenses: shoot.expenses.map(toClientExpense),
     assignments: shoot.assignments.map((a) => ({
       id: a.id,
       role: a.role,
@@ -35,4 +37,21 @@ export function toClientShoot(shoot: AdminData["shoots"][number]): ClientShoot {
 
 export function toClientStaff(staff: AdminData["staff"][number]): ClientStaff {
   return { ...staff };
+}
+
+export function toClientExpense(
+  expense: Omit<AdminData["expenses"][number], "shoot"> & {
+    shoot?: { title: string } | null;
+  }
+): ClientExpense {
+  return {
+    id: expense.id,
+    title: expense.title,
+    amount: expense.amount,
+    category: expense.category,
+    date: mapDate(expense.date),
+    notes: expense.notes,
+    shootId: expense.shootId,
+    shootTitle: expense.shoot?.title,
+  };
 }

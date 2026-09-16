@@ -87,6 +87,7 @@ async function main() {
       location: "Stage B, Hollywood",
       notes: "2 setups, indoor product. Breakfast catered at 6am.",
       price: 4500,
+      amountPaid: 4500,
       status: ShootStatus.CONFIRMED,
       assignments: [
         ["Director", "Alex Rivera", AssignmentStatus.CONFIRMED],
@@ -106,6 +107,7 @@ async function main() {
       location: "Downtown LA streets",
       notes: "Run-and-gun, city hall exteriors. Street parking pass provided.",
       price: 3200,
+      amountPaid: 1500,
       status: ShootStatus.CONFIRMED,
       assignments: [
         ["Director", "Alex Rivera", AssignmentStatus.CONFIRMED],
@@ -218,6 +220,7 @@ async function main() {
         location: s.location,
         notes: s.notes,
         price: s.price,
+        amountPaid: s.amountPaid ?? 0,
         status: s.status,
       },
     });
@@ -242,6 +245,34 @@ async function main() {
         userId: admin.id,
         role: "Producer",
         status: AssignmentStatus.CONFIRMED,
+      },
+    });
+  }
+
+  const expenses = [
+    { title: "Catering — TerraForm shoot", amount: 350, category: "CATERING", dayOffset: 1, shootTitle: "TerraForm Beverage — Summer Campaign" },
+    { title: "Lighting rental — TerraForm", amount: 600, category: "EQUIPMENT", dayOffset: 0, shootTitle: "TerraForm Beverage — Summer Campaign" },
+    { title: "Mileage & parking — Northline", amount: 120, category: "TRAVEL", dayOffset: 2, shootTitle: "Northline Documentary — Day 1" },
+    { title: "Location fee — Harbor & Vine", amount: 800, category: "LOCATION", dayOffset: 12, shootTitle: "Harbor & Vine — Restaurant Series" },
+    { title: "Freelance editor — Sable spot", amount: 500, category: "CREW", dayOffset: 6, shootTitle: "Sable Coffee — Brand Spot" },
+    { title: "Hard drives", amount: 180, category: "EQUIPMENT", dayOffset: -2, shootTitle: null },
+  ];
+
+  for (const e of expenses) {
+    const existing = await prisma.expense.findFirst({ where: { title: e.title } });
+    if (existing) continue;
+    let shootId = null;
+    if (e.shootTitle) {
+      const shoot = await prisma.shoot.findFirst({ where: { title: e.shootTitle } });
+      shootId = shoot?.id ?? null;
+    }
+    await prisma.expense.create({
+      data: {
+        title: e.title,
+        amount: e.amount,
+        category: e.category,
+        date: daysFromNow(e.dayOffset),
+        shootId,
       },
     });
   }

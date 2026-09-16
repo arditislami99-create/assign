@@ -6,11 +6,13 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, CalendarDays, CircleDollarSign, Clock, MapPin, Pencil, Trash2, Users } from "lucide-react";
 
 import { deleteShoot } from "@/app/actions/shoots";
+import { markShootPaid } from "@/app/actions/shoots";
 import {
   deleteAssignment,
   updateAssignmentStatus,
 } from "@/app/actions/assignments";
 import { ShootForm } from "@/components/admin/shoot-form";
+import { ExpensesManager } from "@/components/admin/expenses-manager";
 import { updateShoot } from "@/app/actions/shoots";
 import { AssignCrewDialog } from "@/components/admin/assign-crew-dialog";
 import { shootStatusInfo } from "@/lib/constants";
@@ -72,6 +74,16 @@ export function ShootDetail({
   const [pending, startTransition] = useTransition();
   const info = shootStatusInfo(shoot.status);
   const cancelled = shoot.status === "CANCELLED";
+  const outstanding =
+    shoot.price != null ? Math.max(0, shoot.price - shoot.amountPaid) : 0;
+  const expenseTotal = shoot.expenses.reduce((sum, e) => sum + e.amount, 0);
+
+  const markPaid = () => {
+    startTransition(async () => {
+      await markShootPaid(shoot.id);
+      router.refresh();
+    });
+  };
 
   const conflictsByAssignment = useMemo(() => {
     const map = new Map<string, { shoot: ClientShoot; role: string }[]>();
@@ -142,6 +154,11 @@ export function ShootDetail({
               <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
                 <CircleDollarSign className="size-4" />
                 {formatPrice(shoot.price)}
+                {outstanding > 0 && (
+                  <span className="font-normal text-muted-foreground">
+                    · {formatPrice(outstanding)} due
+                  </span>
+                )}
               </span>
             )}
           </div>
@@ -223,6 +240,55 @@ export function ShootDetail({
           </div>
         );
       })}
+
+      {(shoot.price != null || shoot.amountPaid > 0 || shoot.expenses.length > 0) && (
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold tracking-tight">Finances</h2>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border p-4">
+              <p className="text-xs font-medium text-muted-foreground">Charge</p>
+              <p className="mt-1 text-xl font-semibold tabular-nums">
+                {formatPrice(shoot.price)}
+              </p>
+            </div>
+            <div className="rounded-xl border p-4">
+              <p className="text-xs font-medium text-muted-foreground">Paid</p>
+              <p className="mt-1 text-xl font-semibold tabular-nums">
+                {formatPrice(shoot.amountPaid)}
+              </p>
+            </div>
+            <div className="rounded-xl border p-4">
+              <p className="text-xs font-medium text-muted-foreground">Outstanding</p>
+              <div className="mt-1 flex items-center justify-between gap-2">
+                <p
+                  className={
+                    outstanding > 0
+                      ? "text-xl font-semibold tabular-nums text-amber-600 dark:text-amber-400"
+                      : "text-xl font-semibold tabular-nums"
+                  }
+                >
+                  {formatPrice(outstanding)}
+                </p>
+                {outstanding > 0 && (
+                  <Button size="sm" variant="outline" onClick={markPaid} disabled={pending}>
+                    Mark paid
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+          <ExpensesManager expenses={shoot.expenses} shoots={[]} fixedShootId={shoot.id} />
+          {expenseTotal > 0 && shoot.price != null && (
+            <p className="text-sm text-muted-foreground">
+              Profit on this shoot:{" "}
+              <span className="font-medium text-foreground">
+                {formatPrice(shoot.price - expenseTotal)}
+              </span>{" "}
+              <span className="text-xs">(charge minus expenses)</span>
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">

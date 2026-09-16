@@ -24,6 +24,16 @@ enum AssignmentStatus {
   DECLINED
 }
 
+enum ExpenseCategory {
+  CREW
+  EQUIPMENT
+  TRAVEL
+  LOCATION
+  CATERING
+  POST
+  OTHER
+}
+
 model User {
   id           String       @id @default(cuid())
   name         String
@@ -53,10 +63,12 @@ model Shoot {
   location    String
   notes       String?
   price       Float?
-  status      ShootStatus  @default(CONFIRMED)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  amountPaid  Float       @default(0)
+  status      ShootStatus @default(CONFIRMED)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
   assignments Assignment[]
+  expenses    Expense[]
 
   @@index([date])
   @@index([status])
@@ -75,4 +87,19 @@ model Assignment {
   @@unique([shootId, userId])
   @@index([userId])
   @@index([role])
+}
+
+model Expense {
+  id        String          @id @default(cuid())
+  title     String
+  amount    Float
+  category  ExpenseCategory @default(OTHER)
+  date      DateTime        @default(now())
+  notes     String?
+  shootId   String?
+  shoot     Shoot?          @relation(fields: [shootId], references: [id], onDelete: Cascade)
+  createdAt DateTime        @default(now())
+
+  @@index([shootId])
+  @@index([date])
 }

@@ -1,3 +1,5 @@
+import type { ExpenseCategory } from "@prisma/client";
+
 export function monthKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
@@ -33,7 +35,17 @@ export type FinanceShoot = {
   client: string;
   date: string;
   price: number | null;
+  amountPaid: number;
   status: "CONFIRMED" | "TENTATIVE" | "CANCELLED";
+};
+
+export type FinanceExpense = {
+  id: string;
+  title: string;
+  amount: number;
+  category: ExpenseCategory;
+  date: string;
+  shootId: string | null;
 };
 
 export type MonthPoint = {
@@ -50,6 +62,18 @@ export type ClientRevenue = {
   shoots: number;
 };
 
+export type CategoryTotal = {
+  category: ExpenseCategory;
+  total: number;
+  count: number;
+};
+
+/** Amount still owed by the client (never negative). */
+export function outstandingOf(shoot: Pick<FinanceShoot, "price" | "amountPaid">): number {
+  if (shoot.price == null) return 0;
+  return Math.max(0, shoot.price - shoot.amountPaid);
+}
+
 export type FinanceSummary = {
   revenue: number;
   pipeline: number;
@@ -62,9 +86,19 @@ export type FinanceSummary = {
   noPriceCount: number;
   months: MonthPoint[];
   clients: ClientRevenue[];
+  totalExpenses: number;
+  expenseCount: number;
+  profit: number;
+  outstanding: number;
+  unpaidCount: number;
+  byCategory: CategoryTotal[];
 };
 
-export function summarizeFinance(shoots: FinanceShoot[], now = new Date()): FinanceSummary {
+export function summarizeFinance(
+  shoots: FinanceShoot[],
+  expenses: FinanceExpense[] = [],
+  now = new Date()
+): FinanceSummary {
   const live = shoots.filter((s) => s.status !== "CANCELLED");
   const confirmed = live.filter((s) => s.status === "CONFIRMED");
   const tentative = live.filter((s) => s.status === "TENTATIVE");
@@ -116,6 +150,25 @@ export function summarizeFinance(shoots: FinanceShoot[], now = new Date()): Fina
     (a, b) => b.revenue + b.pipeline - (a.revenue + a.pipeline)
   );
 
+  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const outstanding = confirmed.reduce((sum, s) => sum + outstandingOf(s), 0);
+  const unpaidCount = confirmed.filter(
+    (s) => s.price != null && outstandingOf(s) > 0
+  ).length;
+
+  const byCategoryMap = new Map<string, CategoryTotal>();
+  for (const e of expenses) {
+    const row = byCategoryMap.get(e.category) ?? {
+      category: e.category,
+      total: 0,
+      count: 0,
+    };
+    row.total += e.amount;
+    row.count += 1;
+    byCategoryMap.set(e.category, row);
+  }
+  const byCategory = Array.from(byCategoryMap.values()).sort((a, b) => b.total - a.total);
+
   return {
     revenue,
     pipeline,
@@ -128,5 +181,11 @@ export function summarizeFinance(shoots: FinanceShoot[], now = new Date()): Fina
     noPriceCount,
     months: monthPoints,
     clients,
+    totalExpenses,
+    expenseCount: expenses.length,
+    profit: revenue - totalExpenses,
+    outstanding,
+    unpaidCount,
+    byCategory,
   };
 }

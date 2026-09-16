@@ -30,7 +30,7 @@ export type MyAssignmentClient = {
 export async function getAdminData() {
   await requireAdmin();
 
-  const [shoots, staff, roles] = await Promise.all([
+  const [shoots, staff, roles, expenses] = await Promise.all([
     db.shoot.findMany({
       orderBy: [{ date: "asc" }, { callTime: "asc" }],
       include: {
@@ -38,6 +38,7 @@ export async function getAdminData() {
           include: { user: { select: assignmentUserSelect } },
           orderBy: { role: "asc" },
         },
+        expenses: { orderBy: { date: "desc" } },
       },
     }),
     db.user.findMany({
@@ -46,9 +47,13 @@ export async function getAdminData() {
       select: { id: true, name: true, email: true, phone: true },
     }),
     db.productionRole.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    db.expense.findMany({
+      orderBy: { date: "desc" },
+      include: { shoot: { select: { title: true } } },
+    }),
   ]);
 
-  return { shoots, staff, roleNames: roles.map((r) => r.name) };
+  return { shoots, staff, roleNames: roles.map((r) => r.name), expenses };
 }
 
 export type AdminData = Awaited<ReturnType<typeof getAdminData>>;
@@ -63,6 +68,7 @@ export async function getShootById(id: string) {
         include: { user: { select: assignmentUserSelect } },
         orderBy: [{ role: "asc" }, { createdAt: "asc" }],
       },
+      expenses: { orderBy: { date: "desc" } },
     },
   });
 }
