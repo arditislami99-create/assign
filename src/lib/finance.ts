@@ -26,3 +26,107 @@ export function shootMonth(dateIso: string): string {
   const d = new Date(dateIso);
   return monthKey(d);
 }
+
+export type FinanceShoot = {
+  id: string;
+  title: string;
+  client: string;
+  date: string;
+  price: number | null;
+  status: "CONFIRMED" | "TENTATIVE" | "CANCELLED";
+};
+
+export type MonthPoint = {
+  key: string;
+  label: string;
+  confirmed: number;
+  tentative: number;
+};
+
+export type ClientRevenue = {
+  client: string;
+  revenue: number;
+  pipeline: number;
+  shoots: number;
+};
+
+export type FinanceSummary = {
+  revenue: number;
+  pipeline: number;
+  totalConfirmed: number;
+  totalTentative: number;
+  thisMonthRevenue: number;
+  thisMonthPipeline: number;
+  prevMonthRevenue: number;
+  avgShootValue: number;
+  noPriceCount: number;
+  months: MonthPoint[];
+  clients: ClientRevenue[];
+};
+
+export function summarizeFinance(shoots: FinanceShoot[], now = new Date()): FinanceSummary {
+  const live = shoots.filter((s) => s.status !== "CANCELLED");
+  const confirmed = live.filter((s) => s.status === "CONFIRMED");
+  const tentative = live.filter((s) => s.status === "TENTATIVE");
+
+  const revenueOf = (list: typeof live) =>
+    list.reduce((sum, s) => sum + (s.price ?? 0), 0);
+
+  const revenue = revenueOf(confirmed);
+  const pipeline = revenueOf(tentative);
+
+  const thisMonth = monthKey(now);
+  const inMonth = (s: FinanceShoot, key: string) => shootMonth(s.date) === key;
+  const thisMonthRevenue = revenueOf(confirmed.filter((s) => inMonth(s, thisMonth)));
+  const thisMonthPipeline = revenueOf(tentative.filter((s) => inMonth(s, thisMonth)));
+  const prevMonth = monthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+  const prevMonthRevenue = revenueOf(confirmed.filter((s) => inMonth(s, prevMonth)));
+
+  const priced = confirmed.filter((s) => s.price != null);
+  const avgShootValue = priced.length > 0 ? revenue / priced.length : 0;
+  const noPriceCount = live.filter((s) => s.price == null).length;
+
+  const months = lastMonths(6, now);
+  const revByMonth = new Map(
+    months.map((m) => [m, { confirmed: 0, tentative: 0 }])
+  );
+  for (const s of live) {
+    const bucket = revByMonth.get(shootMonth(s.date));
+    if (!bucket) continue;
+    if (s.status === "CONFIRMED") bucket.confirmed += s.price ?? 0;
+    else bucket.tentative += s.price ?? 0;
+  }
+  const monthPoints: MonthPoint[] = months.map((key) => ({
+    key,
+    label: monthLabel(key),
+    confirmed: revByMonth.get(key)!.confirmed,
+    tentative: revByMonth.get(key)!.tentative,
+  }));
+
+  const byClient = new Map<string, ClientRevenue>();
+  for (const s of live) {
+    const row =
+      byClient.get(s.client) ?? { client: s.client, revenue: 0, pipeline: 0, shoots: 0 };
+    row.shoots += 1;
+    if (s.status === "CONFIRMED") row.revenue += s.price ?? 0;
+    else row.pipeline += s.price ?? 0;
+    byClient.set(s.client, row);
+  }
+  const clients = Array.from(byClient.values()).sort(
+    (a, b) => b.revenue + b.pipeline - (a.revenue + a.pipeline)
+  );
+
+  return {
+    revenue,
+    pipeline,
+    totalConfirmed: confirmed.length,
+    totalTentative: tentative.length,
+    thisMonthRevenue,
+    thisMonthPipeline,
+    prevMonthRevenue,
+    avgShootValue,
+    noPriceCount,
+    months: monthPoints,
+    clients,
+  };
+}

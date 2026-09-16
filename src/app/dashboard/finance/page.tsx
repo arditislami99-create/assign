@@ -1,65 +1,53 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
 
 import { getAdminData } from "@/lib/data";
 import { toClientShoot } from "@/lib/mappers";
 import { formatPrice } from "@/lib/utils";
-import { lastMonths, monthLabel, shootMonth } from "@/lib/finance";
-import { shootStatusInfo } from "@/lib/constants";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { summarizeFinance } from "@/lib/finance";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ShootsFinanceTable } from "./shoots-table";
 
 export const metadata: Metadata = { title: "Finances" };
 
 export default async function FinancePage() {
   const { shoots } = await getAdminData();
   const all = shoots.map(toClientShoot);
+  const summary = summarizeFinance(all);
 
-  const live = all.filter((s) => s.status !== "CANCELLED");
-  const confirmed = live.filter((s) => s.status === "CONFIRMED");
-  const tentative = live.filter((s) => s.status === "TENTATIVE");
+  const moM =
+    summary.prevMonthRevenue > 0
+      ? Math.round(
+          ((summary.thisMonthRevenue - summary.prevMonthRevenue) /
+            summary.prevMonthRevenue) *
+            100
+        )
+      : null;
 
-  const revenueOf = (list: typeof live) =>
-    list.reduce((sum, s) => sum + (s.price ?? 0), 0);
-
-  const revenue = revenueOf(confirmed);
-  const pipeline = revenueOf(tentative);
-  const noPrice = live.filter((s) => s.price == null).length;
-
-  const now = new Date();
-  const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const thisMonthRevenue = live
-    .filter((s) => shootMonth(s.date) === thisMonth)
-    .reduce((sum, s) => sum + (s.price ?? 0), 0);
-
-  const months = lastMonths(6);
-  const revByMonth = new Map(months.map((m) => [m, 0]));
-  for (const s of live) {
-    const key = shootMonth(s.date);
-    if (!revByMonth.has(key)) continue;
-    revByMonth.set(key, (revByMonth.get(key) ?? 0) + (s.price ?? 0));
-  }
-  const maxBar = Math.max(1, ...months.map((m) => revByMonth.get(m) ?? 0));
-
-  const byClient = new Map<string, { revenue: number; shoots: number }>();
-  for (const s of live) {
-    const row = byClient.get(s.client) ?? { revenue: 0, shoots: 0 };
-    row.revenue += s.price ?? 0;
-    row.shoots += 1;
-    byClient.set(s.client, row);
-  }
-  const clients = Array.from(byClient.entries()).sort((a, b) => b[1].revenue - a[1].revenue);
-
-  const rows = [...live].sort((a, b) => b.date.localeCompare(a.date));
+  const statCards = [
+    {
+      title: "Confirmed revenue",
+      value: formatPrice(summary.revenue),
+      sub: `${summary.totalConfirmed} shoot${summary.totalConfirmed === 1 ? "" : "s"}`,
+    },
+    {
+      title: "This month",
+      value: formatPrice(summary.thisMonthRevenue),
+      sub:
+        moM === null
+          ? "vs last month"
+          : `${moM >= 0 ? "+" : ""}${moM}% vs last month`,
+    },
+    {
+      title: "Tentative pipeline",
+      value: formatPrice(summary.pipeline),
+      sub: `${summary.totalTentative} potential shoot${summary.totalTentative === 1 ? "" : "s"}`,
+    },
+    {
+      title: "Avg. shoot value",
+      value: formatPrice(summary.avgShootValue),
+      sub: "confirmed shoots with a price",
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -67,138 +55,129 @@ export default async function FinancePage() {
         <h1 className="text-2xl font-semibold tracking-tight">Finances</h1>
         <p className="text-sm text-muted-foreground">
           Revenue from shoot charges. Cancelled shoots are excluded.
-          {noPrice > 0 && ` ${noPrice} shoot${noPrice === 1 ? "" : "s"} have no price set.`}
+          {summary.noPriceCount > 0 &&
+            ` ${summary.noPriceCount} shoot${summary.noPriceCount === 1 ? "" : "s"} have no price set.`}
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {statCards.map((c) => (
+          <Card key={c.title}>
+            <CardHeader className="pb-1">
+              <CardTitle className="text-xs font-medium text-muted-foreground">
+                {c.title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-semibold tabular-nums">{c.value}</p>
+              <p className="text-xs text-muted-foreground">{c.sub}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-2">
         <Card>
-          <CardHeader className="pb-1">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Confirmed revenue</CardTitle>
+          <CardHeader>
+            <CardTitle className="text-base">Revenue, last 6 months</CardTitle>
+            <CardDescription>
+              Confirmed bookings vs tentative pipeline, by shoot month.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold tabular-nums">{formatPrice(revenue)}</p>
-            <p className="text-xs text-muted-foreground">{confirmed.length} shoots</p>
+            <div className="flex h-48 items-end gap-2 sm:gap-3">
+              {summary.months.map((m) => {
+                const max = Math.max(
+                  1,
+                  ...summary.months.map((x) => x.confirmed + x.tentative)
+                );
+                const total = m.confirmed + m.tentative;
+                const confirmedPct = (m.confirmed / max) * 100;
+                const tentativePct = (m.tentative / max) * 100;
+                return (
+                  <div key={m.key} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
+                    <span className="text-[11px] font-medium tabular-nums text-muted-foreground">
+                      {total > 0 ? formatPrice(total) : ""}
+                    </span>
+                    <div className="flex h-32 w-full max-w-14 flex-col justify-end overflow-hidden rounded-md bg-muted">
+                      {m.tentative > 0 && (
+                        <div
+                          className="w-full bg-amber-500/40"
+                          style={{ height: `${Math.max(2, tentativePct)}%` }}
+                          title={`Tentative ${formatPrice(m.tentative)}`}
+                        />
+                      )}
+                      {m.confirmed > 0 && (
+                        <div
+                          className="w-full bg-primary/80"
+                          style={{ height: `${Math.max(4, confirmedPct)}%` }}
+                          title={`Confirmed ${formatPrice(m.confirmed)}`}
+                        />
+                      )}
+                    </div>
+                    <span className="text-[11px] text-muted-foreground">{m.label}</span>
+                  </div>
+                );
+              })}
+            </div>
           </CardContent>
         </Card>
+
         <Card>
-          <CardHeader className="pb-1">
-            <CardTitle className="text-xs font-medium text-muted-foreground">This month</CardTitle>
+          <CardHeader>
+            <CardTitle className="text-base">By client</CardTitle>
+            <CardDescription>Total value across confirmed and tentative shoots.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-semibold tabular-nums">{formatPrice(thisMonthRevenue)}</p>
-            <p className="text-xs text-muted-foreground">
-              {now.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-1">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Tentative pipeline</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-semibold tabular-nums">{formatPrice(pipeline)}</p>
-            <p className="text-xs text-muted-foreground">{tentative.length} shoots</p>
+          <CardContent className="px-0 pb-0">
+            {summary.clients.length === 0 ? (
+              <p className="px-4 pb-4 text-sm text-muted-foreground">No shoots yet.</p>
+            ) : (
+              <div className="space-y-3 px-4 pb-4">
+                {summary.clients.slice(0, 8).map((c) => {
+                  const top = summary.clients[0];
+                  const topValue = top.revenue + top.pipeline;
+                  const value = c.revenue + c.pipeline;
+                  return (
+                    <div key={c.client} className="space-y-1">
+                      <div className="flex items-baseline justify-between gap-2 text-sm">
+                        <span className="min-w-0 truncate font-medium">{c.client}</span>
+                        <span className="shrink-0 tabular-nums text-muted-foreground">
+                          {formatPrice(value)}
+                          <span className="ml-2 text-xs">
+                            {c.shoots} shoot{c.shoots === 1 ? "" : "s"}
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex h-2 w-full overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="bg-primary/80"
+                          style={{ width: `${(c.revenue / topValue) * 100}%` }}
+                        />
+                        <div
+                          className="bg-amber-500/50"
+                          style={{ width: `${(c.pipeline / topValue) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Revenue — last 6 months</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex h-40 items-end gap-3 sm:gap-4">
-            {months.map((m) => {
-              const rev = revByMonth.get(m) ?? 0;
-              return (
-                <div key={m} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
-                  <span className="text-[11px] font-medium tabular-nums text-muted-foreground">
-                    {rev > 0 ? formatPrice(rev) : ""}
-                  </span>
-                  <div className="flex h-28 w-full max-w-14 items-end overflow-hidden rounded-md bg-muted">
-                    <div
-                      className="w-full rounded-md bg-primary/80"
-                      style={{ height: `${Math.max(rev > 0 ? 4 : 0, (rev / maxBar) * 100)}%` }}
-                      title={`Revenue ${formatPrice(rev)}`}
-                    />
-                  </div>
-                  <span className="text-[11px] text-muted-foreground">{monthLabel(m)}</span>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">By client</CardTitle>
-        </CardHeader>
-        <CardContent className="px-0 pb-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Client</TableHead>
-                <TableHead className="text-right">Shoots</TableHead>
-                <TableHead className="text-right">Revenue</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {clients.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={3} className="text-center text-muted-foreground">
-                    No shoots yet.
-                  </TableCell>
-                </TableRow>
-              )}
-              {clients.map(([client, row]) => (
-                <TableRow key={client}>
-                  <TableCell className="font-medium">{client}</TableCell>
-                  <TableCell className="text-right tabular-nums">{row.shoots}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatPrice(row.revenue)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Shoots</CardTitle>
-        </CardHeader>
-        <CardContent className="px-0 pb-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Shoot</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Charge</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((s) => {
-                const info = shootStatusInfo(s.status);
-                return (
-                  <TableRow key={s.id}>
-                    <TableCell>
-                      <Link href={`/dashboard/shoots/${s.id}`} className="group inline-flex items-center gap-1 font-medium hover:underline">
-                        {s.title}
-                        <ArrowUpRight className="size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-                      </Link>
-                      <p className="text-xs text-muted-foreground">{s.client}</p>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={info.classes}>{info.label}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">{formatPrice(s.price)}</TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
+      <Card className="overflow-hidden py-0">
+        <ShootsFinanceTable
+          shoots={all.map((s) => ({
+            id: s.id,
+            title: s.title,
+            client: s.client,
+            date: s.date,
+            price: s.price,
+            status: s.status,
+          }))}
+        />
       </Card>
     </div>
   );
