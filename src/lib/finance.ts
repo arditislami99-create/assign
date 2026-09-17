@@ -158,7 +158,13 @@ export function summarizeFinance(
   ).length;
 
   const currentYear = now.getFullYear();
-  const yearKeys = [currentYear - 2, currentYear - 1, currentYear];
+  const yearKeys = [
+    currentYear - 4,
+    currentYear - 3,
+    currentYear - 2,
+    currentYear - 1,
+    currentYear,
+  ];
   const revByYear = new Map(
     yearKeys.map((y) => [y, { confirmed: 0, tentative: 0, expenses: 0 }])
   );
