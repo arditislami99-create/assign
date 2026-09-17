@@ -17,15 +17,6 @@ export default async function FinancePage() {
   const allExpenses = expenses.map(toClientExpense);
   const summary = summarizeFinance(all, allExpenses);
 
-  const moM =
-    summary.prevMonthRevenue > 0
-      ? Math.round(
-          ((summary.thisMonthRevenue - summary.prevMonthRevenue) /
-            summary.prevMonthRevenue) *
-            100
-        )
-      : null;
-
   const statCards = [
     {
       title: "Confirmed revenue",
@@ -55,27 +46,6 @@ export default async function FinancePage() {
     },
   ];
 
-  const activityCards = [
-    {
-      title: "This month",
-      value: formatPrice(summary.thisMonthRevenue),
-      sub:
-        moM === null
-          ? "vs last month"
-          : `${moM >= 0 ? "+" : ""}${moM}% vs last month`,
-    },
-    {
-      title: "Tentative pipeline",
-      value: formatPrice(summary.pipeline),
-      sub: `${summary.totalTentative} potential shoot${summary.totalTentative === 1 ? "" : "s"}`,
-    },
-    {
-      title: "Avg. shoot value",
-      value: formatPrice(summary.avgShootValue),
-      sub: "confirmed shoots with a price",
-    },
-  ];
-
   return (
     <div className="space-y-6">
       <div>
@@ -97,22 +67,6 @@ export default async function FinancePage() {
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-semibold tabular-nums">{c.value}</p>
-              <p className="text-xs text-muted-foreground">{c.sub}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        {activityCards.map((c) => (
-          <Card key={c.title}>
-            <CardHeader className="pb-1">
-              <CardTitle className="text-xs font-medium text-muted-foreground">
-                {c.title}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-xl font-semibold tabular-nums">{c.value}</p>
               <p className="text-xs text-muted-foreground">{c.sub}</p>
             </CardContent>
           </Card>
@@ -206,44 +160,79 @@ export default async function FinancePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">By client</CardTitle>
-            <CardDescription>Total value across confirmed and tentative shoots.</CardDescription>
+            <CardTitle className="text-base">Yearly revenue</CardTitle>
+            <CardDescription>
+              Confirmed revenue vs expenses per year. Label: profit.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="px-0 pb-0">
-            {summary.clients.length === 0 ? (
-              <p className="px-4 pb-4 text-sm text-muted-foreground">No shoots yet.</p>
-            ) : (
-              <div className="space-y-3 px-4 pb-4">
-                {summary.clients.slice(0, 8).map((c) => {
-                  const top = summary.clients[0];
-                  const topValue = top.revenue + top.pipeline;
-                  const value = c.revenue + c.pipeline;
-                  return (
-                    <div key={c.client} className="space-y-1">
-                      <div className="flex items-baseline justify-between gap-2 text-sm">
-                        <span className="min-w-0 truncate font-medium">{c.client}</span>
-                        <span className="shrink-0 tabular-nums text-muted-foreground">
-                          {formatPrice(value)}
-                          <span className="ml-2 text-xs">
-                            {c.shoots} shoot{c.shoots === 1 ? "" : "s"}
-                          </span>
-                        </span>
+          <CardContent>
+            <div className="flex h-48 items-end gap-4 sm:gap-6">
+              {summary.years.map((y) => {
+                const max = Math.max(
+                  1,
+                  ...summary.years.flatMap((x) => [x.confirmed + x.tentative, x.expenses])
+                );
+                const revenue = y.confirmed + y.tentative;
+                const confirmedPct = (y.confirmed / max) * 100;
+                const tentativePct = (y.tentative / max) * 100;
+                const expensesPct = (y.expenses / max) * 100;
+                const profitable = y.profit >= 0;
+                return (
+                  <div key={y.year} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
+                    <span
+                      className={
+                        revenue + y.expenses > 0
+                          ? profitable
+                            ? "text-xs font-medium tabular-nums text-emerald-600 dark:text-emerald-400"
+                            : "text-xs font-medium tabular-nums text-rose-600 dark:text-rose-400"
+                          : "text-xs tabular-nums text-transparent"
+                      }
+                    >
+                      {formatPrice(y.profit)}
+                    </span>
+                    <div className="flex h-32 w-full max-w-28 items-end justify-center gap-1.5">
+                      <div className="flex w-full max-w-12 flex-col justify-end overflow-hidden rounded-md bg-muted" style={{ height: "100%" }}>
+                        {y.tentative > 0 && (
+                          <div
+                            className="w-full bg-amber-500/40"
+                            style={{ height: `${Math.max(2, tentativePct)}%` }}
+                            title={`Tentative ${formatPrice(y.tentative)}`}
+                          />
+                        )}
+                        {y.confirmed > 0 && (
+                          <div
+                            className="w-full bg-primary/80"
+                            style={{ height: `${Math.max(4, confirmedPct)}%` }}
+                            title={`Confirmed ${formatPrice(y.confirmed)}`}
+                          />
+                        )}
                       </div>
-                      <div className="flex h-2 w-full overflow-hidden rounded-full bg-muted">
-                        <div
-                          className="bg-primary/80"
-                          style={{ width: `${(c.revenue / topValue) * 100}%` }}
-                        />
-                        <div
-                          className="bg-amber-500/50"
-                          style={{ width: `${(c.pipeline / topValue) * 100}%` }}
-                        />
+                      <div className="flex w-full max-w-12 flex-col justify-end overflow-hidden rounded-md bg-muted" style={{ height: "100%" }}>
+                        {y.expenses > 0 && (
+                          <div
+                            className="w-full bg-rose-500/70"
+                            style={{ height: `${Math.max(4, expensesPct)}%` }}
+                            title={`Expenses ${formatPrice(y.expenses)}`}
+                          />
+                        )}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            )}
+                    <span className="text-xs font-medium text-muted-foreground">{y.year}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-2.5 rounded-sm bg-primary/80" /> Confirmed
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-2.5 rounded-sm bg-amber-500/40" /> Tentative
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-2.5 rounded-sm bg-rose-500/70" /> Expenses
+              </span>
+            </div>
           </CardContent>
         </Card>
       </div>

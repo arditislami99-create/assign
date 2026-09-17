@@ -57,17 +57,12 @@ export type MonthPoint = {
   profit: number;
 };
 
-export type ClientRevenue = {
-  client: string;
-  revenue: number;
-  pipeline: number;
-  shoots: number;
-};
-
-export type CategoryTotal = {
-  category: ExpenseCategory;
-  total: number;
-  count: number;
+export type YearPoint = {
+  year: number;
+  confirmed: number;
+  tentative: number;
+  expenses: number;
+  profit: number;
 };
 
 /** Amount still owed by the client (never negative). */
@@ -76,18 +71,23 @@ export function outstandingOf(shoot: Pick<FinanceShoot, "price" | "amountPaid">)
   return Math.max(0, shoot.price - shoot.amountPaid);
 }
 
+export type CategoryTotal = {
+  category: ExpenseCategory;
+  total: number;
+  count: number;
+};
+
+/** Calendar year for a shoot/expense date ISO string. */
+export function yearOf(dateIso: string): number {
+  return new Date(dateIso).getFullYear();
+}
+
 export type FinanceSummary = {
   revenue: number;
-  pipeline: number;
   totalConfirmed: number;
-  totalTentative: number;
-  thisMonthRevenue: number;
-  thisMonthPipeline: number;
-  prevMonthRevenue: number;
-  avgShootValue: number;
   noPriceCount: number;
   months: MonthPoint[];
-  clients: ClientRevenue[];
+  years: YearPoint[];
   totalExpenses: number;
   expenseCount: number;
   profit: number;
@@ -103,23 +103,12 @@ export function summarizeFinance(
 ): FinanceSummary {
   const live = shoots.filter((s) => s.status !== "CANCELLED");
   const confirmed = live.filter((s) => s.status === "CONFIRMED");
-  const tentative = live.filter((s) => s.status === "TENTATIVE");
 
   const revenueOf = (list: typeof live) =>
     list.reduce((sum, s) => sum + (s.price ?? 0), 0);
 
   const revenue = revenueOf(confirmed);
-  const pipeline = revenueOf(tentative);
 
-  const thisMonth = monthKey(now);
-  const inMonth = (s: FinanceShoot, key: string) => shootMonth(s.date) === key;
-  const thisMonthRevenue = revenueOf(confirmed.filter((s) => inMonth(s, thisMonth)));
-  const thisMonthPipeline = revenueOf(tentative.filter((s) => inMonth(s, thisMonth)));
-  const prevMonth = monthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1));
-  const prevMonthRevenue = revenueOf(confirmed.filter((s) => inMonth(s, prevMonth)));
-
-  const priced = confirmed.filter((s) => s.price != null);
-  const avgShootValue = priced.length > 0 ? revenue / priced.length : 0;
   const noPriceCount = live.filter((s) => s.price == null).length;
 
   const months = lastMonths(6, now);
@@ -149,25 +138,6 @@ export function summarizeFinance(
     };
   });
 
-  const byClient = new Map<string, ClientRevenue>();
-  for (const s of live) {
-    const row =
-      byClient.get(s.client) ?? { client: s.client, revenue: 0, pipeline: 0, shoots: 0 };
-    row.shoots += 1;
-    if (s.status === "CONFIRMED") row.revenue += s.price ?? 0;
-    else row.pipeline += s.price ?? 0;
-    byClient.set(s.client, row);
-  }
-  const clients = Array.from(byClient.values()).sort(
-    (a, b) => b.revenue + b.pipeline - (a.revenue + a.pipeline)
-  );
-
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
-  const outstanding = confirmed.reduce((sum, s) => sum + outstandingOf(s), 0);
-  const unpaidCount = confirmed.filter(
-    (s) => s.price != null && outstandingOf(s) > 0
-  ).length;
-
   const byCategoryMap = new Map<string, CategoryTotal>();
   for (const e of expenses) {
     const row = byCategoryMap.get(e.category) ?? {
@@ -181,18 +151,45 @@ export function summarizeFinance(
   }
   const byCategory = Array.from(byCategoryMap.values()).sort((a, b) => b.total - a.total);
 
+  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const outstanding = confirmed.reduce((sum, s) => sum + outstandingOf(s), 0);
+  const unpaidCount = confirmed.filter(
+    (s) => s.price != null && outstandingOf(s) > 0
+  ).length;
+
+  const currentYear = now.getFullYear();
+  const yearKeys = [currentYear - 2, currentYear - 1, currentYear];
+  const revByYear = new Map(
+    yearKeys.map((y) => [y, { confirmed: 0, tentative: 0, expenses: 0 }])
+  );
+  for (const s of live) {
+    const bucket = revByYear.get(yearOf(s.date));
+    if (!bucket) continue;
+    if (s.status === "CONFIRMED") bucket.confirmed += s.price ?? 0;
+    else bucket.tentative += s.price ?? 0;
+  }
+  for (const e of expenses) {
+    const bucket = revByYear.get(yearOf(e.date));
+    if (!bucket) continue;
+    bucket.expenses += e.amount;
+  }
+  const years: YearPoint[] = yearKeys.map((year) => {
+    const b = revByYear.get(year)!;
+    return {
+      year,
+      confirmed: b.confirmed,
+      tentative: b.tentative,
+      expenses: b.expenses,
+      profit: b.confirmed - b.expenses,
+    };
+  });
+
   return {
     revenue,
-    pipeline,
     totalConfirmed: confirmed.length,
-    totalTentative: tentative.length,
-    thisMonthRevenue,
-    thisMonthPipeline,
-    prevMonthRevenue,
-    avgShootValue,
     noPriceCount,
     months: monthPoints,
-    clients,
+    years,
     totalExpenses,
     expenseCount: expenses.length,
     profit: revenue - totalExpenses,
