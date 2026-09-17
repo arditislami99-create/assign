@@ -7,6 +7,7 @@ import { expenseCategoryLabel } from "@/lib/constants";
 import { summarizeFinance } from "@/lib/finance";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ExpensesManager } from "@/components/admin/expenses-manager";
+import { RevenueTable } from "./revenue-table";
 import { ShootsFinanceTable } from "./shoots-table";
 
 export const metadata: Metadata = { title: "Finances" };
@@ -72,6 +73,10 @@ export default async function FinancePage() {
           </Card>
         ))}
       </div>
+
+      <Card className="overflow-hidden py-0">
+        <RevenueTable months={summary.months} years={summary.years} />
+      </Card>
 
       <div className="grid gap-3 lg:grid-cols-2">
         <Card>
