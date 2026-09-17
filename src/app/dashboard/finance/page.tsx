@@ -122,9 +122,9 @@ export default async function FinancePage() {
       <div className="grid gap-3 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Revenue, last 6 months</CardTitle>
+            <CardTitle className="text-base">Revenue vs expenses, last 6 months</CardTitle>
             <CardDescription>
-              Confirmed bookings vs tentative pipeline, by shoot month.
+              Left bar: confirmed + tentative revenue. Right bar: expenses. Label: profit.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -132,36 +132,74 @@ export default async function FinancePage() {
               {summary.months.map((m) => {
                 const max = Math.max(
                   1,
-                  ...summary.months.map((x) => x.confirmed + x.tentative)
+                  ...summary.months.flatMap((x) => [x.confirmed + x.tentative, x.expenses])
                 );
-                const total = m.confirmed + m.tentative;
+                const revenue = m.confirmed + m.tentative;
                 const confirmedPct = (m.confirmed / max) * 100;
                 const tentativePct = (m.tentative / max) * 100;
+                const expensesPct = (m.expenses / max) * 100;
+                const profitable = m.profit >= 0;
                 return (
                   <div key={m.key} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
-                    <span className="text-[11px] font-medium tabular-nums text-muted-foreground">
-                      {total > 0 ? formatPrice(total) : ""}
+                    <span
+                      className={
+                        revenue + m.expenses > 0
+                          ? profitable
+                            ? "text-[11px] font-medium tabular-nums text-emerald-600 dark:text-emerald-400"
+                            : "text-[11px] font-medium tabular-nums text-rose-600 dark:text-rose-400"
+                          : "text-[11px] tabular-nums text-transparent"
+                      }
+                    >
+                      {formatPrice(m.profit)}
                     </span>
-                    <div className="flex h-32 w-full max-w-14 flex-col justify-end overflow-hidden rounded-md bg-muted">
-                      {m.tentative > 0 && (
-                        <div
-                          className="w-full bg-amber-500/40"
-                          style={{ height: `${Math.max(2, tentativePct)}%` }}
-                          title={`Tentative ${formatPrice(m.tentative)}`}
-                        />
-                      )}
-                      {m.confirmed > 0 && (
-                        <div
-                          className="w-full bg-primary/80"
-                          style={{ height: `${Math.max(4, confirmedPct)}%` }}
-                          title={`Confirmed ${formatPrice(m.confirmed)}`}
-                        />
-                      )}
+                    <div className="flex h-32 w-full max-w-16 items-end justify-center gap-1">
+                      <div
+                        className="flex w-full max-w-7 flex-col justify-end overflow-hidden rounded-md bg-muted"
+                        style={{ height: "100%" }}
+                      >
+                        {m.tentative > 0 && (
+                          <div
+                            className="w-full bg-amber-500/40"
+                            style={{ height: `${Math.max(2, tentativePct)}%` }}
+                            title={`Tentative ${formatPrice(m.tentative)}`}
+                          />
+                        )}
+                        {m.confirmed > 0 && (
+                          <div
+                            className="w-full bg-primary/80"
+                            style={{ height: `${Math.max(4, confirmedPct)}%` }}
+                            title={`Confirmed ${formatPrice(m.confirmed)}`}
+                          />
+                        )}
+                      </div>
+                      <div
+                        className="flex w-full max-w-7 flex-col justify-end overflow-hidden rounded-md bg-muted"
+                        style={{ height: "100%" }}
+                      >
+                        {m.expenses > 0 && (
+                          <div
+                            className="w-full bg-rose-500/70"
+                            style={{ height: `${Math.max(4, expensesPct)}%` }}
+                            title={`Expenses ${formatPrice(m.expenses)}`}
+                          />
+                        )}
+                      </div>
                     </div>
                     <span className="text-[11px] text-muted-foreground">{m.label}</span>
                   </div>
                 );
               })}
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-2.5 rounded-sm bg-primary/80" /> Confirmed
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-2.5 rounded-sm bg-amber-500/40" /> Tentative
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-2.5 rounded-sm bg-rose-500/70" /> Expenses
+              </span>
             </div>
           </CardContent>
         </Card>

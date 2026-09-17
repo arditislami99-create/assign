@@ -53,6 +53,8 @@ export type MonthPoint = {
   label: string;
   confirmed: number;
   tentative: number;
+  expenses: number;
+  profit: number;
 };
 
 export type ClientRevenue = {
@@ -122,7 +124,7 @@ export function summarizeFinance(
 
   const months = lastMonths(6, now);
   const revByMonth = new Map(
-    months.map((m) => [m, { confirmed: 0, tentative: 0 }])
+    months.map((m) => [m, { confirmed: 0, tentative: 0, expenses: 0 }])
   );
   for (const s of live) {
     const bucket = revByMonth.get(shootMonth(s.date));
@@ -130,12 +132,22 @@ export function summarizeFinance(
     if (s.status === "CONFIRMED") bucket.confirmed += s.price ?? 0;
     else bucket.tentative += s.price ?? 0;
   }
-  const monthPoints: MonthPoint[] = months.map((key) => ({
-    key,
-    label: monthLabel(key),
-    confirmed: revByMonth.get(key)!.confirmed,
-    tentative: revByMonth.get(key)!.tentative,
-  }));
+  for (const e of expenses) {
+    const bucket = revByMonth.get(shootMonth(e.date));
+    if (!bucket) continue;
+    bucket.expenses += e.amount;
+  }
+  const monthPoints: MonthPoint[] = months.map((key) => {
+    const b = revByMonth.get(key)!;
+    return {
+      key,
+      label: monthLabel(key),
+      confirmed: b.confirmed,
+      tentative: b.tentative,
+      expenses: b.expenses,
+      profit: b.confirmed - b.expenses,
+    };
+  });
 
   const byClient = new Map<string, ClientRevenue>();
   for (const s of live) {
