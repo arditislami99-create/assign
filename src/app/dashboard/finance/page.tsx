@@ -74,10 +74,6 @@ export default async function FinancePage() {
         ))}
       </div>
 
-      <Card className="overflow-hidden py-0">
-        <RevenueTable months={summary.months} years={summary.years} />
-      </Card>
-
       <div className="grid gap-3 lg:grid-cols-2">
         <Card>
           <CardHeader>
@@ -241,6 +237,10 @@ export default async function FinancePage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="overflow-hidden py-0">
+        <RevenueTable months={summary.months} years={summary.years} />
+      </Card>
 
       <div className="grid gap-3 lg:grid-cols-2">
         <Card>

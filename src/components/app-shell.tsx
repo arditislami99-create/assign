@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Brand } from "@/components/brand";
 import { MobileNav } from "@/components/mobile-nav";
+import { NavLinks } from "@/components/nav-links";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
 import { requireUser } from "@/lib/session";
@@ -19,41 +20,7 @@ export async function AppShell({ children }: Readonly<{ children: React.ReactNod
               <Brand />
             </Link>
             <nav className="hidden items-center gap-1 sm:flex">
-              {isAdmin ? (
-                <>
-                  <Link
-                    href="/dashboard"
-                    className="rounded-md px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-                  >
-                    Schedule
-                  </Link>
-                  <Link
-                    href="/dashboard/team"
-                    className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                  >
-                    Team
-                  </Link>
-                  <Link
-                    href="/dashboard/finance"
-                    className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                  >
-                    Finances
-                  </Link>
-                  <Link
-                    href="/dashboard/shoots/new"
-                    className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                  >
-                    New shoot
-                  </Link>
-                </>
-              ) : (
-                <Link
-                  href="/schedule"
-                  className="rounded-md px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-                >
-                  My schedule
-                </Link>
-              )}
+              <NavLinks isAdmin={isAdmin} />
             </nav>
           </div>
           <div className="flex items-center gap-1.5">
